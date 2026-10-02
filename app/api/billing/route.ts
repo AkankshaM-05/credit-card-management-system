@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import {
     getBillingStatementsByCard,
     getBillingStatementById,
-    generateMonthlyBillingStatements,
+    generateWeeklyBillingStatements,
 } from "@/lib/services/billing";
 import { getCardById } from "@/lib/services/card";
 
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     /*
       Manager, Customer and Employee can access
       billing data.
-
+  
       Employee needs the statement information
       required to record payments.
     */
@@ -141,17 +141,16 @@ export async function GET(request: Request) {
         }
 
         /*
-          Make sure the current 5-day billing
-          statement exists before returning statements.
-
-          This allows payment to be recorded
-          even when the current 5-day period
-          is not yet complete.
+          Generate any missing weekly billing statements
+          before returning the billing history.
+    
+          Empty weeks are skipped and existing
+          statements are not duplicated.
         */
-        await generateMonthlyBillingStatements();
+        await generateWeeklyBillingStatements();
 
         /*
-          Now fetch the statements from the database.
+          Fetch the statements from the database.
         */
         const statements =
             await getBillingStatementsByCard(

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateMonthlyBillingStatements } from "@/lib/services/billing";
+import { generateWeeklyBillingStatements } from "@/lib/services/billing";
 
 export async function GET(request: Request) {
     /*
@@ -21,11 +21,11 @@ export async function GET(request: Request) {
 
     try {
         const result =
-            await generateMonthlyBillingStatements();
+            await generateWeeklyBillingStatements();
 
         return NextResponse.json({
             success: true,
-            message: "Monthly billing statements generated.",
+            message: "Weekly billing statements generated.",
             generated: result.generated,
             skipped: result.skipped,
         });
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
                 error:
                     error instanceof Error
                         ? error.message
-                        : "Failed to generate monthly billing statements.",
+                        : "Failed to generate weekly billing statements.",
             },
             { status: 500 }
         );

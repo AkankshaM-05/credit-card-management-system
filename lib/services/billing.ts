@@ -9,19 +9,19 @@ export async function getBillingStatementsByCard(
 ): Promise<BillingStatement[]> {
   const result = await pool.query(
     `
-        SELECT
-            Statement_ID,
-            Card_ID,
-            Billing_Start_Date,
-            Billing_End_Date,
-            Transaction_Amount,
-            Amount_Paid,
-            Due_Date,
-            Status
-        FROM BILLING_STATEMENT
-        WHERE Card_ID = $1
-        ORDER BY Billing_End_Date DESC, Statement_ID DESC
-        `,
+      SELECT
+        Statement_ID,
+        Card_ID,
+        Billing_Start_Date,
+        Billing_End_Date,
+        Transaction_Amount,
+        Amount_Paid,
+        Due_Date,
+        Status
+      FROM BILLING_STATEMENT
+      WHERE Card_ID = $1
+      ORDER BY Billing_End_Date DESC, Statement_ID DESC
+    `,
     [cardId]
   );
 
@@ -45,18 +45,18 @@ export async function getBillingStatementById(
 ): Promise<BillingStatement | null> {
   const result = await pool.query(
     `
-        SELECT
-            Statement_ID,
-            Card_ID,
-            Billing_Start_Date,
-            Billing_End_Date,
-            Transaction_Amount,
-            Amount_Paid,
-            Due_Date,
-            Status
-        FROM BILLING_STATEMENT
-        WHERE Statement_ID = $1
-        `,
+      SELECT
+        Statement_ID,
+        Card_ID,
+        Billing_Start_Date,
+        Billing_End_Date,
+        Transaction_Amount,
+        Amount_Paid,
+        Due_Date,
+        Status
+      FROM BILLING_STATEMENT
+      WHERE Statement_ID = $1
+    `,
     [statementId]
   );
 
@@ -79,20 +79,18 @@ export async function getBillingStatementById(
 }
 
 /*
-  Generate 5-day billing statements.
+  Generate weekly billing statements.
 
-  The current 5-day billing period is also created
-  immediately. It does not wait for all 5 days to finish.
-
-  Example:
-
-  Card issued on 20 September
-
-  20 Sep - 24 Sep → Statement 1
-  25 Sep - 29 Sep → Statement 2
-  30 Sep - 04 Oct → Statement 3
+  Rules:
+  - Billing starts from the card's Issue_Date.
+  - Each billing period is 7 days.
+  - Empty periods are skipped.
+  - No future billing periods are created.
+  - Existing statements are not duplicated.
+  - New statements start with status DUE.
+  - Due date = billing period end + 15 days.
 */
-export async function generateMonthlyBillingStatements(): Promise<{
+export async function generateWeeklyBillingStatements(): Promise<{
   generated: number;
   skipped: number;
 }> {
@@ -106,19 +104,13 @@ export async function generateMonthlyBillingStatements(): Promise<{
 
     const today = new Date();
 
-    /*
-      Remove time from today's date.
-    */
     const todayDate = new Date(
       today.getFullYear(),
       today.getMonth(),
       today.getDate()
     );
 
-    /*
-      Format Date as YYYY-MM-DD.
-    */
-    const formatDate = (date: Date) => {
+    const formatDate = (date: Date): string => {
       return date.toISOString().split("T")[0];
     };
 
@@ -127,12 +119,12 @@ export async function generateMonthlyBillingStatements(): Promise<{
     */
     const cardsResult = await client.query(
       `
-            SELECT
-                Card_ID,
-                Issue_Date
-            FROM CREDIT_CARD
-            WHERE Status IN ('ACTIVE', 'BLOCKED')
-            `
+        SELECT
+          Card_ID,
+          Issue_Date
+        FROM CREDIT_CARD
+        WHERE Status IN ('ACTIVE', 'BLOCKED')
+      `
     );
 
     for (const card of cardsResult.rows) {
@@ -154,37 +146,26 @@ export async function generateMonthlyBillingStatements(): Promise<{
       /*
         Start from the card's issue date.
       */
-      let billingStart = new Date(
-        issueDateOnly
-      );
+      let billingStart = new Date(issueDateOnly);
 
-      /*
-        Find the current 5-day billing period.
-
-        Each period contains 5 days:
-        Start → Start + 4 days
-      */
       while (true) {
-        const billingEnd = new Date(
-          billingStart
-        );
+        /*
+          Each billing period contains 7 days:
+          Start date through Start + 6 days.
+        */
+        const billingEnd = new Date(billingStart);
 
         billingEnd.setDate(
-          billingEnd.getDate() + 4
+          billingEnd.getDate() + 6
         );
 
         /*
-          If today's date is before this period,
-          stop.
+          Do not process a future billing period.
         */
         if (billingStart > todayDate) {
           break;
         }
 
-        /*
-          The statement can cover the full
-          5-day period even if it is still ongoing.
-        */
         const billingStartDate =
           formatDate(billingStart);
 
@@ -192,14 +173,8 @@ export async function generateMonthlyBillingStatements(): Promise<{
           formatDate(billingEnd);
 
         /*
-          Only include transactions that have
-          happened so far.
-
-          For a completed period, this includes
-          the entire period.
-
-          For the current period, this includes
-          transactions up to today.
+          For the current period, only include
+          transactions that have happened so far.
         */
         const transactionEndDate =
           billingEnd > todayDate
@@ -207,32 +182,18 @@ export async function generateMonthlyBillingStatements(): Promise<{
             : billingEndDate;
 
         /*
-          Due date is 15 days after the
-          billing period ends.
-        */
-        const dueDateObject = new Date(
-          billingEnd
-        );
-
-        dueDateObject.setDate(
-          dueDateObject.getDate() + 15
-        );
-
-        const dueDate =
-          formatDate(dueDateObject);
-
-        /*
-          Check whether this statement already exists.
+          Check whether this exact billing statement
+          already exists.
         */
         const existingStatement =
           await client.query(
             `
-                        SELECT Statement_ID
-                        FROM BILLING_STATEMENT
-                        WHERE Card_ID = $1
-                          AND Billing_Start_Date = $2
-                          AND Billing_End_Date = $3
-                        `,
+              SELECT Statement_ID
+              FROM BILLING_STATEMENT
+              WHERE Card_ID = $1
+                AND Billing_Start_Date = $2
+                AND Billing_End_Date = $3
+            `,
             [
               card.card_id,
               billingStartDate,
@@ -240,37 +201,42 @@ export async function generateMonthlyBillingStatements(): Promise<{
             ]
           );
 
-        if (existingStatement.rows.length === 0) {
+        /*
+          Do not create duplicate statements.
+        */
+        if (existingStatement.rows.length > 0) {
+          skipped++;
+        } else {
           /*
-            Calculate transaction amount.
+            Calculate the total transaction amount.
 
-            PURCHASE  → adds
-            REFUND    → subtracts
-            REVERSAL  → subtracts
+            PURCHASE  -> adds
+            REFUND    -> subtracts
+            REVERSAL  -> subtracts
           */
           const transactionResult =
             await client.query(
               `
-                            SELECT
-                                COALESCE(
-                                    SUM(
-                                        CASE
-                                            WHEN Transaction_Type = 'PURCHASE'
-                                                THEN Amount
+                SELECT
+                  COALESCE(
+                    SUM(
+                      CASE
+                        WHEN Transaction_Type = 'PURCHASE'
+                          THEN Amount
 
-                                            WHEN Transaction_Type IN ('REFUND', 'REVERSAL')
-                                                THEN -Amount
+                        WHEN Transaction_Type IN ('REFUND', 'REVERSAL')
+                          THEN -Amount
 
-                                            ELSE 0
-                                        END
-                                    ),
-                                    0
-                                ) AS Transaction_Amount
-                            FROM CARD_TRANSACTION
-                            WHERE Card_ID = $1
-                              AND Transaction_Date >= $2
-                              AND Transaction_Date <= $3
-                            `,
+                        ELSE 0
+                      END
+                    ),
+                    0
+                  ) AS Transaction_Amount
+                FROM CARD_TRANSACTION
+                WHERE Card_ID = $1
+                  AND Transaction_Date >= $2
+                  AND Transaction_Date <= $3
+              `,
               [
                 card.card_id,
                 billingStartDate,
@@ -278,81 +244,85 @@ export async function generateMonthlyBillingStatements(): Promise<{
               ]
             );
 
-          const transactionAmount =
-            Number(
-              transactionResult.rows[0]
-                .transaction_amount
-            );
-
-          /*
-            New statement starts with
-            no payment.
-          */
-          const amountPaid = 0;
-
-          const amountToBePaid =
-            transactionAmount - amountPaid;
-
-          /*
-            If there is an amount to pay,
-            status is DUE.
-
-            If there is nothing to pay,
-            status is PAID.
-          */
-          const status: BillingStatus =
-            amountToBePaid <= 0
-              ? "PAID"
-              : "DUE";
-
-          /*
-            Create the billing statement.
-          */
-          await client.query(
-            `
-                        INSERT INTO BILLING_STATEMENT
-                        (
-                            Card_ID,
-                            Billing_Start_Date,
-                            Billing_End_Date,
-                            Transaction_Amount,
-                            Amount_Paid,
-                            Due_Date,
-                            Status
-                        )
-                        VALUES
-                        ($1, $2, $3, $4, $5, $6, $7)
-                        `,
-            [
-              card.card_id,
-              billingStartDate,
-              billingEndDate,
-              transactionAmount,
-              amountPaid,
-              dueDate,
-              status,
-            ]
+          const transactionAmount = Number(
+            transactionResult.rows[0]
+              .transaction_amount
           );
 
-          generated++;
-        } else {
-          skipped++;
+          /*
+            Skip empty billing periods.
+          */
+          if (transactionAmount <= 0) {
+            skipped++;
+          } else {
+            /*
+              New statement starts with:
+              Amount_Paid = 0
+              Status = DUE
+            */
+            const amountPaid = 0;
+            const status: BillingStatus = "DUE";
+
+            /*
+              Due date is 15 days after
+              the billing period ends.
+            */
+            const dueDateObject = new Date(
+              billingEnd
+            );
+
+            dueDateObject.setDate(
+              dueDateObject.getDate() + 15
+            );
+
+            const dueDate =
+              formatDate(dueDateObject);
+
+            /*
+              Create the billing statement.
+            */
+            await client.query(
+              `
+                INSERT INTO BILLING_STATEMENT
+                (
+                  Card_ID,
+                  Billing_Start_Date,
+                  Billing_End_Date,
+                  Transaction_Amount,
+                  Amount_Paid,
+                  Due_Date,
+                  Status
+                )
+                VALUES
+                ($1, $2, $3, $4, $5, $6, $7)
+              `,
+              [
+                card.card_id,
+                billingStartDate,
+                billingEndDate,
+                transactionAmount,
+                amountPaid,
+                dueDate,
+                status,
+              ]
+            );
+
+            generated++;
+          }
         }
 
         /*
-          If this is the current billing period,
-          there is no need to create future periods.
+          Stop after processing the current period.
+          Do not create future periods.
         */
         if (billingEnd >= todayDate) {
           break;
         }
 
         /*
-          Move to the next 5-day period.
+          Move to the next 7-day billing period.
         */
-        billingStart = new Date(
-          billingEnd
-        );
+        billingStart = new Date(billingEnd);
 
         billingStart.setDate(
           billingStart.getDate() + 1
