@@ -79,11 +79,43 @@ export async function getBillingStatementById(
 }
 
 /*
+  Convert a PostgreSQL DATE string (YYYY-MM-DD)
+  into a local calendar date without timezone shifting.
+*/
+function parseDateOnly(value: string | Date): Date {
+  if (typeof value === "string") {
+    const [year, month, day] = value.split("-").map(Number);
+
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(
+    value.getFullYear(),
+    value.getMonth(),
+    value.getDate()
+  );
+}
+
+/*
+  Format a local calendar date as YYYY-MM-DD.
+
+  Do NOT use toISOString() here because it converts
+  the date to UTC and can shift it by one day.
+*/
+function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+/*
   Generate weekly billing statements.
 
   Rules:
   - Billing starts from the card's Issue_Date.
-  - Each billing period is 7 days.
+  - Each billing period is exactly 7 days.
   - Empty periods are skipped.
   - No future billing periods are created.
   - Existing statements are not duplicated.
@@ -110,10 +142,6 @@ export async function generateWeeklyBillingStatements(): Promise<{
       today.getDate()
     );
 
-    const formatDate = (date: Date): string => {
-      return date.toISOString().split("T")[0];
-    };
-
     /*
       Get all active or blocked cards.
     */
@@ -128,13 +156,10 @@ export async function generateWeeklyBillingStatements(): Promise<{
     );
 
     for (const card of cardsResult.rows) {
-      const issueDate = new Date(card.issue_date);
-
-      const issueDateOnly = new Date(
-        issueDate.getFullYear(),
-        issueDate.getMonth(),
-        issueDate.getDate()
-      );
+      /*
+        Parse PostgreSQL DATE without timezone conversion.
+      */
+      const issueDateOnly = parseDateOnly(card.issue_date);
 
       /*
         Ignore cards that have not been issued yet.
@@ -144,7 +169,7 @@ export async function generateWeeklyBillingStatements(): Promise<{
       }
 
       /*
-        Start from the card's issue date.
+        Start exactly from the card's Issue_Date.
       */
       let billingStart = new Date(issueDateOnly);
 
@@ -155,9 +180,7 @@ export async function generateWeeklyBillingStatements(): Promise<{
         */
         const billingEnd = new Date(billingStart);
 
-        billingEnd.setDate(
-          billingEnd.getDate() + 6
-        );
+        billingEnd.setDate(billingEnd.getDate() + 6);
 
         /*
           Do not process a future billing period.
@@ -166,15 +189,12 @@ export async function generateWeeklyBillingStatements(): Promise<{
           break;
         }
 
-        const billingStartDate =
-          formatDate(billingStart);
-
-        const billingEndDate =
-          formatDate(billingEnd);
+        const billingStartDate = formatDate(billingStart);
+        const billingEndDate = formatDate(billingEnd);
 
         /*
-          For the current period, only include
-          transactions that have happened so far.
+          For the current incomplete period,
+          only include transactions up to today.
         */
         const transactionEndDate =
           billingEnd > todayDate
@@ -185,68 +205,65 @@ export async function generateWeeklyBillingStatements(): Promise<{
           Check whether this exact billing statement
           already exists.
         */
-        const existingStatement =
-          await client.query(
-            `
-              SELECT Statement_ID
-              FROM BILLING_STATEMENT
-              WHERE Card_ID = $1
-                AND Billing_Start_Date = $2
-                AND Billing_End_Date = $3
-            `,
-            [
-              card.card_id,
-              billingStartDate,
-              billingEndDate,
-            ]
-          );
+        const existingStatement = await client.query(
+          `
+            SELECT Statement_ID
+            FROM BILLING_STATEMENT
+            WHERE Card_ID = $1
+              AND Billing_Start_Date = $2
+              AND Billing_End_Date = $3
+          `,
+          [
+            card.card_id,
+            billingStartDate,
+            billingEndDate,
+          ]
+        );
 
         /*
-          Do not create duplicate statements.
+          Do not create an exact duplicate.
         */
         if (existingStatement.rows.length > 0) {
           skipped++;
         } else {
           /*
-            Calculate the total transaction amount.
+            Calculate the net transaction amount.
 
             PURCHASE  -> adds
             REFUND    -> subtracts
             REVERSAL  -> subtracts
           */
-          const transactionResult =
-            await client.query(
-              `
-                SELECT
-                  COALESCE(
-                    SUM(
-                      CASE
-                        WHEN Transaction_Type = 'PURCHASE'
-                          THEN Amount
+          const transactionResult = await client.query(
+            `
+              SELECT
+                COALESCE(
+                  SUM(
+                    CASE
+                      WHEN Transaction_Type = 'PURCHASE'
+                        THEN Amount
 
-                        WHEN Transaction_Type IN ('REFUND', 'REVERSAL')
-                          THEN -Amount
+                      WHEN Transaction_Type IN ('REFUND', 'REVERSAL')
+                        THEN -Amount
 
-                        ELSE 0
-                      END
-                    ),
-                    0
-                  ) AS Transaction_Amount
-                FROM CARD_TRANSACTION
-                WHERE Card_ID = $1
-                  AND Transaction_Date >= $2
-                  AND Transaction_Date <= $3
-              `,
-              [
-                card.card_id,
-                billingStartDate,
-                transactionEndDate,
-              ]
-            );
+                      ELSE 0
+                    END
+                  ),
+                  0
+                ) AS Transaction_Amount
+              FROM CARD_TRANSACTION
+              WHERE Card_ID = $1
+                AND Transaction_Date >= $2
+                AND Transaction_Date <= $3
+            `,
+            [
+              card.card_id,
+              billingStartDate,
+              transactionEndDate,
+            ]
+          );
 
           const transactionAmount = Number(
-            transactionResult.rows[0]
-              .transaction_amount
+            transactionResult.rows[0].transaction_amount
           );
 
           /*
@@ -255,28 +272,19 @@ export async function generateWeeklyBillingStatements(): Promise<{
           if (transactionAmount <= 0) {
             skipped++;
           } else {
-            /*
-              New statement starts with:
-              Amount_Paid = 0
-              Status = DUE
-            */
             const amountPaid = 0;
             const status: BillingStatus = "DUE";
 
             /*
-              Due date is 15 days after
-              the billing period ends.
+              Due date = billing period end + 15 days.
             */
-            const dueDateObject = new Date(
-              billingEnd
-            );
+            const dueDateObject = new Date(billingEnd);
 
             dueDateObject.setDate(
               dueDateObject.getDate() + 15
             );
 
-            const dueDate =
-              formatDate(dueDateObject);
+            const dueDate = formatDate(dueDateObject);
 
             /*
               Create the billing statement.
@@ -313,14 +321,13 @@ export async function generateWeeklyBillingStatements(): Promise<{
 
         /*
           Stop after processing the current period.
-          Do not create future periods.
         */
         if (billingEnd >= todayDate) {
           break;
         }
 
         /*
-          Move to the next 7-day billing period.
+          Move exactly 7 days forward.
         */
         billingStart = new Date(billingEnd);
 
