@@ -40,7 +40,9 @@ export async function GET(request: Request) {
                 );
             }
 
-            const cards = await getCardsByCustomer(session.customerId);
+            const cards = await getCardsByCustomer(
+                session.customerId
+            );
 
             return NextResponse.json(cards);
         }
@@ -69,9 +71,12 @@ export async function GET(request: Request) {
 
             if (
                 session.userType === "CUSTOMER" &&
-                card.customerId !== String(session.customerId)
+                card.customerId !== session.customerId
             ) {
-                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+                return NextResponse.json(
+                    { error: "Forbidden" },
+                    { status: 403 }
+                );
             }
 
             return NextResponse.json(card);
@@ -89,9 +94,7 @@ export async function GET(request: Request) {
                 );
             }
 
-            const cards = await getCardsByCustomer(
-                Number(customerId)
-            );
+            const cards = await getCardsByCustomer(customerId);
 
             return NextResponse.json(cards);
         }
@@ -143,7 +146,7 @@ export async function POST(request: Request) {
         }
 
         const card = await createCard({
-            customerId: Number(data.customerId),
+            customerId: String(data.customerId),
             creditLimit: Number(data.creditLimit),
             issueDate: data.issueDate,
             expiryDate: data.expiryDate,

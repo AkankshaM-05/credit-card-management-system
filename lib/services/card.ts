@@ -3,7 +3,7 @@ import { CreditCard, CardStatus } from "../types";
 import { createAuditLog } from "./audit";
 
 export async function createCard(data: {
-    customerId: number;
+    customerId: string;
     creditLimit: number;
     issueDate: string;
     expiryDate: string;
@@ -49,7 +49,7 @@ export async function createCard(data: {
 }
 
 export async function getCardsByCustomer(
-    customerId: number
+    customerId: string
 ): Promise<CreditCard[]> {
     const result = await pool.query(
         `
@@ -122,7 +122,7 @@ export async function getCardById(
 export async function updateCardStatus(
     cardId: number,
     newStatus: CardStatus,
-    staffId: number,
+    staffId: string,
     reason?: string
 ): Promise<CreditCard | null> {
     const client = await pool.connect();

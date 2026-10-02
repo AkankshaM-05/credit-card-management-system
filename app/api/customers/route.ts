@@ -83,7 +83,7 @@ export async function GET(request: Request) {
             // Customer can view only their own information
             if (
                 session.userType === "CUSTOMER" &&
-                session.customerId !== Number(customerId)
+                session.customerId !== customerId
             ) {
                 return NextResponse.json(
                     { error: "Forbidden" },
@@ -91,9 +91,7 @@ export async function GET(request: Request) {
                 );
             }
 
-            const customer = await getCustomerById(
-                Number(customerId)
-            );
+            const customer = await getCustomerById(customerId);
 
             if (!customer) {
                 return NextResponse.json(

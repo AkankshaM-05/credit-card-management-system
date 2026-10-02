@@ -2,14 +2,14 @@ import { PoolClient } from "pg";
 import { CardStatus } from "../types";
 
 export async function createAuditLog(
-    client: PoolClient,
-    staffId: number,
-    cardId: number,
-    action: CardStatus,
-    reason?: string
+  client: PoolClient,
+  staffId: string,
+  cardId: number,
+  action: CardStatus,
+  reason?: string
 ): Promise<void> {
-    await client.query(
-        `
+  await client.query(
+    `
     INSERT INTO AUDIT_LOG
       (
         Staff_ID,
@@ -20,11 +20,11 @@ export async function createAuditLog(
     VALUES
       ($1, $2, $3, $4)
     `,
-        [
-            staffId,
-            cardId,
-            action,
-            reason || null,
-        ]
-    );
+    [
+      staffId,
+      cardId,
+      action,
+      reason || null,
+    ]
+  );
 }

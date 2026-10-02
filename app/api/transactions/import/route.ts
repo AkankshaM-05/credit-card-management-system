@@ -182,10 +182,10 @@ export async function POST(request: Request) {
 
         // Insert transactions
         for (const transaction of validTransactions) {
-            // Check Card_ID
+            // Check Card_ID and Card Status
             const cardResult = await client.query(
                 `
-                SELECT Card_ID
+                SELECT Card_ID, Status
                 FROM CREDIT_CARD
                 WHERE Card_ID = $1
                 `,
@@ -195,6 +195,12 @@ export async function POST(request: Request) {
             if (cardResult.rowCount === 0) {
                 throw new Error(
                     `Card_ID ${transaction.cardId} does not exist.`
+                );
+            }
+
+            if (cardResult.rows[0].status !== "ACTIVE") {
+                throw new Error(
+                    `Transaction cannot be created for Card_ID ${transaction.cardId}. Card status is ${cardResult.rows[0].status}.`
                 );
             }
 

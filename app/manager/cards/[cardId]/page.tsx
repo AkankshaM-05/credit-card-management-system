@@ -26,20 +26,44 @@ import {
   CurrentUserSession
 } from '@/lib/types';
 
-export default function ManagerCardReviewPage({ params }: { params: Promise<{ cardId: string }> }) {
+function formatDate(dateValue: string | Date | null | undefined): string {
+  if (!dateValue) return '—';
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+export default function ManagerCardReviewPage({
+  params
+}: {
+  params: Promise<{ cardId: string }>
+}) {
   const resolvedParams = use(params);
   const cardId = resolvedParams.cardId;
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<CurrentUserSession | null>(null);
+  const [currentUser, setCurrentUser] =
+    useState<CurrentUserSession | null>(null);
 
   const [card, setCard] = useState<CreditCard | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [transactions, setTransactions] = useState<CardTransaction[]>([]);
-  const [billingStatements, setBillingStatements] = useState<BillingStatement[]>([]);
+  const [transactions, setTransactions] =
+    useState<CardTransaction[]>([]);
+  const [billingStatements, setBillingStatements] =
+    useState<BillingStatement[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'transactions' | 'billing' | 'payments'>('transactions');
+  const [activeTab, setActiveTab] =
+    useState<'transactions' | 'billing' | 'payments'>('transactions');
+
   const [loading, setLoading] = useState(true);
   const [actionFeedback, setActionFeedback] = useState<string>('');
 
@@ -61,6 +85,7 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
     try {
       const c = await fetchCardById(cardId);
       setCard(c);
+
       if (c) {
         const [cust, txns, stmts, pymts] = await Promise.all([
           fetchCustomerById(c.customerId),
@@ -68,6 +93,7 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
           fetchBillingStatementsByCard(cardId),
           fetchPaymentsByCard(cardId)
         ]);
+
         setCustomer(cust);
         setTransactions(txns);
         setBillingStatements(stmts);
@@ -103,29 +129,64 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
       setActionFeedback('Failed to update card status.');
     }
   };
+
   // Table Columns
   const transactionColumns: Column<CardTransaction>[] = [
-    { header: 'Transaction ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
-    { header: 'Merchant', accessorKey: 'merchantId', className: 'font-medium' },
+    {
+      header: 'Transaction ID',
+      accessorKey: 'id',
+      className: 'font-mono text-xs font-semibold'
+    },
+    {
+      header: 'Merchant',
+      accessorKey: 'merchantId',
+      className: 'font-medium'
+    },
     {
       header: 'Amount',
-      cell: (row) => <span className="font-semibold text-slate-900">${row.amount.toFixed(2)}</span>
+      cell: (row) => (
+        <span className="font-semibold text-slate-900">
+          ${row.amount.toFixed(2)}
+        </span>
+      )
     },
-    { header: 'Date', accessorKey: 'date' },
+    {
+      header: 'Date',
+      cell: (row) => formatDate(row.date)
+    },
     {
       header: 'Type',
-      cell: (row) => <span className="text-xs font-medium text-slate-700 uppercase">{row.type}</span>
+      cell: (row) => (
+        <span className="text-xs font-medium text-slate-700 uppercase">
+          {row.type}
+        </span>
+      )
     }
   ];
 
   const billingColumns: Column<BillingStatement>[] = [
-    { header: 'Statement ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
-    { header: 'Billing Period', cell: (row) => `${row.billingStartDate} to ${row.billingEndDate}` },
+    {
+      header: 'Statement ID',
+      accessorKey: 'id',
+      className: 'font-mono text-xs font-semibold'
+    },
+    {
+      header: 'Billing Period',
+      cell: (row) =>
+        `${formatDate(row.billingStartDate)} to ${formatDate(row.billingEndDate)}`
+    },
     {
       header: 'Transaction Amount',
-      cell: (row) => <span className="font-semibold text-slate-900">${row.transactionAmount.toFixed(2)}</span>
+      cell: (row) => (
+        <span className="font-semibold text-slate-900">
+          ${row.transactionAmount.toFixed(2)}
+        </span>
+      )
     },
-    { header: 'Due Date', accessorKey: 'dueDate' },
+    {
+      header: 'Due Date',
+      cell: (row) => formatDate(row.dueDate)
+    },
     {
       header: 'Status',
       cell: (row) => <StatusBadge status={row.status} />
@@ -133,21 +194,38 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
   ];
 
   const paymentColumns: Column<Payment>[] = [
-    { header: 'Payment ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
+    {
+      header: 'Payment ID',
+      accessorKey: 'id',
+      className: 'font-mono text-xs font-semibold'
+    },
     {
       header: 'Amount Paid',
-      cell: (row) => <span className="font-semibold text-emerald-700">${row.amountPaid.toFixed(2)}</span>
+      cell: (row) => (
+        <span className="font-semibold text-emerald-700">
+          ${row.amountPaid.toFixed(2)}
+        </span>
+      )
     },
-    { header: 'Payment Date', accessorKey: 'paymentDate' },
+    {
+      header: 'Payment Date',
+      cell: (row) => formatDate(row.paymentDate)
+    },
     {
       header: 'Status',
-      cell: (row) => <StatusBadge status={row.paymentStatus} />
+      cell: (row) => (
+        <StatusBadge status={row.paymentStatus} />
+      )
     }
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar role="MANAGER" mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <Sidebar
+        role="MANAGER"
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
 
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         <Topbar
@@ -176,15 +254,20 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
           {/* Card Overview & Review Banner */}
           <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-6">
             {loading ? (
-              <p className="text-sm text-slate-500">Loading card details for review...</p>
+              <p className="text-sm text-slate-500">
+                Loading card details for review...
+              </p>
             ) : card ? (
               <>
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   <div>
                     <div className="flex items-center space-x-3">
-                      <span className="text-xs font-mono font-semibold text-slate-500">{card.id}</span>
+                      <span className="text-xs font-mono font-semibold text-slate-500">
+                        {card.id}
+                      </span>
                       <StatusBadge status={card.status} />
                     </div>
+
                     <h2 className="text-2xl font-mono font-bold text-slate-900 tracking-wider mt-1">
                       {card.id}
                     </h2>
@@ -195,6 +278,7 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
                     <span className="text-xs font-semibold text-slate-500 px-2 uppercase tracking-wider">
                       Actions:
                     </span>
+
                     <button
                       onClick={() => handleStatusChange('ACTIVE')}
                       disabled={card.status !== 'PENDING_APPROVAL'}
@@ -202,6 +286,7 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
                     >
                       Approve
                     </button>
+
                     <button
                       onClick={() => setBlockModalOpen(true)}
                       disabled={card.status !== 'ACTIVE'}
@@ -209,6 +294,7 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
                     >
                       Block
                     </button>
+
                     <button
                       onClick={() => setCloseModalOpen(true)}
                       disabled={card.status !== 'BLOCKED'}
@@ -221,24 +307,39 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-100 text-xs">
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Customer</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Customer
+                    </div>
                     <div className="text-sm font-bold text-slate-900 mt-0.5">
                       {customer?.name || card.customerName || 'Unknown'}
                     </div>
                   </div>
+
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Credit Limit</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Credit Limit
+                    </div>
                     <div className="text-sm font-bold text-slate-900 mt-0.5">
                       ${card.creditLimit.toLocaleString()}
                     </div>
                   </div>
+
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Issue Date</div>
-                    <div className="text-sm font-medium text-slate-800 mt-0.5">{card.issueDate}</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Issue Date
+                    </div>
+                    <div className="text-sm font-medium text-slate-800 mt-0.5">
+                      {formatDate(card.issueDate)}
+                    </div>
                   </div>
+
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Expiry Date</div>
-                    <div className="text-sm font-medium text-slate-800 mt-0.5">{card.expiryDate}</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Expiry Date
+                    </div>
+                    <div className="text-sm font-medium text-slate-800 mt-0.5">
+                      {formatDate(card.expiryDate)}
+                    </div>
                   </div>
                 </div>
               </>
@@ -255,8 +356,8 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
               <button
                 onClick={() => setActiveTab('transactions')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'transactions'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Transactions ({transactions.length})
@@ -265,8 +366,8 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'billing'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Billing Statements ({billingStatements.length})
@@ -275,8 +376,8 @@ export default function ManagerCardReviewPage({ params }: { params: Promise<{ ca
               <button
                 onClick={() => setActiveTab('payments')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'payments'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Payments ({payments.length})

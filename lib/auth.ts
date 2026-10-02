@@ -7,8 +7,8 @@ const secret = new TextEncoder().encode(process.env.SESSION_SECRET);
 export async function createSession(
     userId: number,
     userType: UserRole,
-    customerId?: number,
-    staffId?: number
+    customerId?: string,
+    staffId?: string
 ) {
     const token = await new SignJWT({
         userId,
@@ -45,10 +45,10 @@ export async function getSession() {
             userId: Number(payload.userId),
             userType: String(payload.userType) as UserRole,
             customerId: payload.customerId
-                ? Number(payload.customerId)
+                ? String(payload.customerId)
                 : undefined,
             staffId: payload.staffId
-                ? Number(payload.staffId)
+                ? String(payload.staffId)
                 : undefined,
         };
     } catch {

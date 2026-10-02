@@ -131,10 +131,12 @@ export default function CustomerDashboardPage() {
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <span className="text-xs font-mono font-semibold text-slate-500">{card.id}</span>
-                        <div className="text-base font-mono font-bold text-slate-900 tracking-wider mt-1">
-                          {card.id}
+                        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                          Credit Card ID
                         </div>
+                        <h2 className="text-xl font-mono font-bold text-slate-900 tracking-wider">
+                          {card.id}
+                        </h2>
                       </div>
                       <StatusBadge status={card.status} />
                     </div>

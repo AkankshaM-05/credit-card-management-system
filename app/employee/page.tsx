@@ -111,7 +111,7 @@ export default function EmployeeDashboardPage() {
             </h2>
 
             <p className="text-xs text-slate-500">
-              Search for a customer by name, Customer ID, phone, or email
+              Search for a customer using their unique Customer ID
               before creating cards or entering transactions.
             </p>
           </div>
@@ -120,7 +120,7 @@ export default function EmployeeDashboardPage() {
           <div className="relative">
             <FormInput
               label="Search Customer"
-              placeholder="Name, Customer ID, Phone, or Email..."
+              placeholder="Enter Customer ID (e.g. CUS4837291)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -183,7 +183,8 @@ export default function EmployeeDashboardPage() {
           {/* Initial Search Message */}
           {!searchQuery && !selectedCustomer && (
             <div className="p-6 bg-slate-50/70 border border-slate-200/80 rounded-lg text-slate-500 text-xs text-center">
-              Search for a customer to view their information.
+              Search for a customer using their Customer ID to view
+              their information.
             </div>
           )}
         </section>

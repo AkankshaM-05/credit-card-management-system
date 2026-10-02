@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { Topbar } from '@/components/Topbar';
 import { FormInput } from '@/components/FormInput';
@@ -10,8 +11,12 @@ import { createStaff, fetchStaffList, getCurrentUser } from '@/lib/api';
 import { StaffUser, CurrentUserSession } from '@/lib/types';
 
 export default function AdminStaffPage() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role');
+
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<CurrentUserSession | null>(null);
+  const [currentUser, setCurrentUser] =
+    useState<CurrentUserSession | null>(null);
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +32,10 @@ export default function AdminStaffPage() {
   const [mgrPassword, setMgrPassword] = useState('');
   const [mgrSubmitting, setMgrSubmitting] = useState(false);
 
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     async function loadPage() {
@@ -52,10 +60,12 @@ export default function AdminStaffPage() {
 
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!empName || !empUsername || !empPassword) return;
 
     setEmpSubmitting(true);
     setMessage(null);
+
     try {
       const newEmp = await createStaff({
         name: empName,
@@ -63,17 +73,29 @@ export default function AdminStaffPage() {
         password: empPassword,
         role: 'EMPLOYEE',
       });
+
       if (newEmp) {
-        setMessage({ type: 'success', text: `Employee "${newEmp.name}" created successfully.` });
+        setMessage({
+          type: 'success',
+          text: `Employee "${newEmp.name}" created successfully.`,
+        });
       } else {
-        setMessage({ type: 'success', text: 'Employee creation request sent to backend API.' });
+        setMessage({
+          type: 'success',
+          text: 'Employee creation request sent to backend API.',
+        });
       }
+
       setEmpName('');
       setEmpUsername('');
       setEmpPassword('');
+
       await loadStaff();
     } catch {
-      setMessage({ type: 'error', text: 'Failed to create employee.' });
+      setMessage({
+        type: 'error',
+        text: 'Failed to create employee.',
+      });
     } finally {
       setEmpSubmitting(false);
     }
@@ -81,10 +103,12 @@ export default function AdminStaffPage() {
 
   const handleCreateManager = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!mgrName || !mgrUsername || !mgrPassword) return;
 
     setMgrSubmitting(true);
     setMessage(null);
+
     try {
       const newMgr = await createStaff({
         name: mgrName,
@@ -92,17 +116,29 @@ export default function AdminStaffPage() {
         password: mgrPassword,
         role: 'MANAGER',
       });
+
       if (newMgr) {
-        setMessage({ type: 'success', text: `Manager "${newMgr.name}" created successfully.` });
+        setMessage({
+          type: 'success',
+          text: `Manager "${newMgr.name}" created successfully.`,
+        });
       } else {
-        setMessage({ type: 'success', text: 'Manager creation request sent to backend API.' });
+        setMessage({
+          type: 'success',
+          text: 'Manager creation request sent to backend API.',
+        });
       }
+
       setMgrName('');
       setMgrUsername('');
       setMgrPassword('');
+
       await loadStaff();
     } catch {
-      setMessage({ type: 'error', text: 'Failed to create manager.' });
+      setMessage({
+        type: 'error',
+        text: 'Failed to create manager.',
+      });
     } finally {
       setMgrSubmitting(false);
     }
@@ -124,9 +160,17 @@ export default function AdminStaffPage() {
       cell: (row) => <StatusBadge status={row.role} />,
     },
   ];
+
+  const isEmployee = role === 'EMPLOYEE';
+  const isManager = role === 'MANAGER';
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar role="ADMIN" mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <Sidebar
+        role="ADMIN"
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
 
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         <Topbar
@@ -137,25 +181,33 @@ export default function AdminStaffPage() {
         />
 
         <main className="p-4 sm:p-8 space-y-8 max-w-7xl w-full mx-auto">
+
           {message && (
             <div
               className={`p-3 rounded-lg text-xs font-medium border ${message.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-rose-50 border-rose-200 text-rose-800'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
                 }`}
             >
               {message.text}
             </div>
           )}
 
-          {/* Side by side forms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Create Employee Form */}
-            <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
-              <h2 className="text-base font-bold text-slate-900 mb-1">Create Employee</h2>
-              <p className="text-xs text-slate-500 mb-5">Role automatically set to EMPLOYEE</p>
+          {/* Employee Creation */}
+          {isEmployee && (
+            <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs max-w-2xl">
+              <h2 className="text-base font-bold text-slate-900 mb-1">
+                Create Employee
+              </h2>
 
-              <form onSubmit={handleCreateEmployee} className="space-y-4">
+              <p className="text-xs text-slate-500 mb-5">
+                Role automatically set to EMPLOYEE
+              </p>
+
+              <form
+                onSubmit={handleCreateEmployee}
+                className="space-y-4"
+              >
                 <FormInput
                   label="Name"
                   placeholder="e.g. Employee One"
@@ -163,6 +215,7 @@ export default function AdminStaffPage() {
                   onChange={(e) => setEmpName(e.target.value)}
                   required
                 />
+
                 <FormInput
                   label="Username"
                   placeholder="e.g. emp_john"
@@ -170,6 +223,7 @@ export default function AdminStaffPage() {
                   onChange={(e) => setEmpUsername(e.target.value)}
                   required
                 />
+
                 <FormInput
                   label="Password"
                   type="password"
@@ -178,22 +232,35 @@ export default function AdminStaffPage() {
                   onChange={(e) => setEmpPassword(e.target.value)}
                   required
                 />
+
                 <button
                   type="submit"
                   disabled={empSubmitting}
                   className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-sm rounded-lg shadow-2xs transition-colors disabled:opacity-50"
                 >
-                  {empSubmitting ? 'Creating Employee...' : 'Create Employee'}
+                  {empSubmitting
+                    ? 'Creating Employee...'
+                    : 'Create Employee'}
                 </button>
               </form>
             </section>
+          )}
 
-            {/* Create Manager Form */}
-            <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
-              <h2 className="text-base font-bold text-slate-900 mb-1">Create Manager</h2>
-              <p className="text-xs text-slate-500 mb-5">Role automatically set to MANAGER</p>
+          {/* Manager Creation */}
+          {isManager && (
+            <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs max-w-2xl">
+              <h2 className="text-base font-bold text-slate-900 mb-1">
+                Create Manager
+              </h2>
 
-              <form onSubmit={handleCreateManager} className="space-y-4">
+              <p className="text-xs text-slate-500 mb-5">
+                Role automatically set to MANAGER
+              </p>
+
+              <form
+                onSubmit={handleCreateManager}
+                className="space-y-4"
+              >
                 <FormInput
                   label="Name"
                   placeholder="e.g. Manager Sarah"
@@ -201,6 +268,7 @@ export default function AdminStaffPage() {
                   onChange={(e) => setMgrName(e.target.value)}
                   required
                 />
+
                 <FormInput
                   label="Username"
                   placeholder="e.g. mgr_sarah"
@@ -208,6 +276,7 @@ export default function AdminStaffPage() {
                   onChange={(e) => setMgrUsername(e.target.value)}
                   required
                 />
+
                 <FormInput
                   label="Password"
                   type="password"
@@ -216,22 +285,30 @@ export default function AdminStaffPage() {
                   onChange={(e) => setMgrPassword(e.target.value)}
                   required
                 />
+
                 <button
                   type="submit"
                   disabled={mgrSubmitting}
                   className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-medium text-sm rounded-lg shadow-2xs transition-colors disabled:opacity-50"
                 >
-                  {mgrSubmitting ? 'Creating Manager...' : 'Create Manager'}
+                  {mgrSubmitting
+                    ? 'Creating Manager...'
+                    : 'Create Manager'}
                 </button>
               </form>
             </section>
-          </div>
+          )}
 
           {/* Staff Table */}
           <section className="space-y-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Provisioned Staff</h2>
-              <p className="text-xs text-slate-500">List of all operational employees and managers</p>
+              <h2 className="text-lg font-bold text-slate-900">
+                Provisioned Staff
+              </h2>
+
+              <p className="text-xs text-slate-500">
+                List of all operational employees and managers
+              </p>
             </div>
 
             <DataTable
@@ -241,6 +318,7 @@ export default function AdminStaffPage() {
               loading={loading}
             />
           </section>
+
         </main>
       </div>
     </div>

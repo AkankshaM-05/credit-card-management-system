@@ -104,6 +104,25 @@ export async function POST(request: Request) {
             );
         }
 
+        // Check that the card exists and is active
+        const card = await getCardById(Number(data.cardId));
+
+        if (!card) {
+            return NextResponse.json(
+                { error: "Card not found." },
+                { status: 404 }
+            );
+        }
+
+        if (card.status !== "ACTIVE") {
+            return NextResponse.json(
+                {
+                    error: `Transaction cannot be created. Card status is ${card.status}.`,
+                },
+                { status: 400 }
+            );
+        }
+
         const transaction = await createTransaction({
             cardId: Number(data.cardId),
             merchantId: Number(data.merchantId),

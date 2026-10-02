@@ -16,12 +16,20 @@ export async function getAccounts(): Promise<UserAccount[]> {
     );
 
     return result.rows.map((row) => ({
-        id: String(row.user_id),
+        id:
+            row.user_type === "CUSTOMER"
+                ? String(row.customer_id)
+                : row.user_type === "EMPLOYEE" || row.user_type === "MANAGER"
+                    ? String(row.staff_id)
+                    : "—",
+
         username: row.username,
         userType: row.user_type,
+
         customerId: row.customer_id
             ? String(row.customer_id)
             : undefined,
+
         staffId: row.staff_id
             ? String(row.staff_id)
             : undefined,

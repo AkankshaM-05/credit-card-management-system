@@ -21,6 +21,21 @@ import {
   CurrentUserSession
 } from '@/lib/types';
 
+function formatDate(dateValue: string | Date | null | undefined): string {
+  if (!dateValue) return '—';
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 export default function CustomerCardDetailPage({ params }: { params: Promise<{ cardId: string }> }) {
   const resolvedParams = use(params);
   const cardId = resolvedParams.cardId;
@@ -70,7 +85,10 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
       header: 'Amount',
       cell: (row) => <span className="font-semibold text-slate-900">${row.amount.toFixed(2)}</span>
     },
-    { header: 'Date', accessorKey: 'date' },
+    {
+      header: 'Date',
+      cell: (row) => formatDate(row.date)
+    },
     {
       header: 'Type',
       cell: (row) => <span className="text-xs font-medium text-slate-700 uppercase">{row.type}</span>
@@ -79,8 +97,14 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
 
   const billingColumns: Column<BillingStatement>[] = [
     { header: 'Statement ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
-    { header: 'Start Date', accessorKey: 'billingStartDate' },
-    { header: 'End Date', accessorKey: 'billingEndDate' },
+    {
+      header: 'Start Date',
+      cell: (row) => formatDate(row.billingStartDate)
+    },
+    {
+      header: 'End Date',
+      cell: (row) => formatDate(row.billingEndDate)
+    },
     {
       header: 'Total Amount',
       cell: (row) => (
@@ -89,7 +113,10 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
         </span>
       )
     },
-    { header: 'Due Date', accessorKey: 'dueDate' },
+    {
+      header: 'Due Date',
+      cell: (row) => formatDate(row.dueDate)
+    },
     {
       header: 'Status',
       cell: (row) => <StatusBadge status={row.status} />
@@ -102,7 +129,10 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
       header: 'Amount Paid',
       cell: (row) => <span className="font-semibold text-emerald-700">${row.amountPaid.toFixed(2)}</span>
     },
-    { header: 'Payment Date', accessorKey: 'paymentDate' },
+    {
+      header: 'Payment Date',
+      cell: (row) => formatDate(row.paymentDate)
+    },
     {
       header: 'Payment Status',
       cell: (row) => <StatusBadge status={row.paymentStatus} />
@@ -140,7 +170,9 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
               <div className="space-y-4">
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <div>
-                    <span className="text-xs font-mono font-semibold text-slate-500">{card.id}</span>
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Credit Card ID
+                    </div>
                     <h2 className="text-xl font-mono font-bold text-slate-900 tracking-wider">
                       {card.id}
                     </h2>
@@ -157,11 +189,15 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
                   </div>
                   <div>
                     <div className="text-slate-400 uppercase tracking-wider font-semibold">Issue Date</div>
-                    <div className="text-sm font-medium text-slate-800 mt-0.5">{card.issueDate}</div>
+                    <div className="text-sm font-medium text-slate-800 mt-0.5">
+                      {formatDate(card.issueDate)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-slate-400 uppercase tracking-wider font-semibold">Expiry Date</div>
-                    <div className="text-sm font-medium text-slate-800 mt-0.5">{card.expiryDate}</div>
+                    <div className="text-sm font-medium text-slate-800 mt-0.5">
+                      {formatDate(card.expiryDate)}
+                    </div>
                   </div>
                 </div>
               </div>
