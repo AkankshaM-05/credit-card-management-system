@@ -1,22 +1,33 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+
 import { Sidebar } from '@/components/Sidebar';
 import { Topbar } from '@/components/Topbar';
 import { FormInput } from '@/components/FormInput';
 import { DataTable, Column } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
-import { createStaff, fetchStaffList, getCurrentUser } from '@/lib/api';
-import { StaffUser, CurrentUserSession } from '@/lib/types';
 
-export default function AdminStaffPage() {
+import {
+  createStaff,
+  fetchStaffList,
+  getCurrentUser,
+} from '@/lib/api';
+
+import {
+  StaffUser,
+  CurrentUserSession,
+} from '@/lib/types';
+
+function AdminStaffContent() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role');
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currentUser, setCurrentUser] =
     useState<CurrentUserSession | null>(null);
+
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +51,7 @@ export default function AdminStaffPage() {
   useEffect(() => {
     async function loadPage() {
       const user = await getCurrentUser();
+
       setCurrentUser(user);
       await loadStaff();
     }
@@ -52,7 +64,7 @@ export default function AdminStaffPage() {
       const data = await fetchStaffList();
       setStaff(data);
     } catch {
-      // ignore
+      // Ignore errors
     } finally {
       setLoading(false);
     }
@@ -61,7 +73,9 @@ export default function AdminStaffPage() {
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!empName || !empUsername || !empPassword) return;
+    if (!empName || !empUsername || !empPassword) {
+      return;
+    }
 
     setEmpSubmitting(true);
     setMessage(null);
@@ -104,7 +118,9 @@ export default function AdminStaffPage() {
   const handleCreateManager = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!mgrName || !mgrUsername || !mgrPassword) return;
+    if (!mgrName || !mgrUsername || !mgrPassword) {
+      return;
+    }
 
     setMgrSubmitting(true);
     setMessage(null);
@@ -322,5 +338,13 @@ export default function AdminStaffPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AdminStaffPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminStaffContent />
+    </Suspense>
   );
 }
