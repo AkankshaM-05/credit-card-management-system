@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
         const workbook = XLSX.read(buffer, {
             type: "buffer",
-            cellDates: true,
+            cellDates: false,
         });
 
         const sheetName = workbook.SheetNames[0];
@@ -273,10 +273,6 @@ export async function POST(request: Request) {
 }
 
 function normalizeDate(value: unknown): string | null {
-    if (value instanceof Date && !isNaN(value.getTime())) {
-        return value.toISOString().split("T")[0];
-    }
-
     if (typeof value === "number") {
         const date = XLSX.SSF.parse_date_code(value);
 
@@ -296,13 +292,31 @@ function normalizeDate(value: unknown): string | null {
             return null;
         }
 
-        const parsed = new Date(trimmed);
+        const match = trimmed.match(
+            /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/
+        );
 
-        if (isNaN(parsed.getTime())) {
+        if (!match) {
             return null;
         }
 
-        return parsed.toISOString().split("T")[0];
+        const day = Number(match[1]);
+        const month = Number(match[2]);
+        const year = Number(match[3]);
+
+        const testDate = new Date(year, month - 1, day);
+
+        if (
+            testDate.getFullYear() !== year ||
+            testDate.getMonth() !== month - 1 ||
+            testDate.getDate() !== day
+        ) {
+            return null;
+        }
+
+        return `${year}-${String(month).padStart(2, "0")}-${String(
+            day
+        ).padStart(2, "0")}`;
     }
 
     return null;

@@ -21,8 +21,39 @@ import {
   CurrentUserSession
 } from '@/lib/types';
 
-function formatDate(dateValue: string | Date | null | undefined): string {
+function formatDate(
+  dateValue: string | Date | null | undefined
+): string {
   if (!dateValue) return '—';
+
+  if (typeof dateValue === 'string') {
+    const datePart = dateValue.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+
+    if (
+      !year ||
+      !month ||
+      !day ||
+      year.length !== 4 ||
+      month.length !== 2 ||
+      day.length !== 2
+    ) {
+      return '—';
+    }
+
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    const monthIndex = Number(month) - 1;
+
+    if (monthIndex < 0 || monthIndex > 11) {
+      return '—';
+    }
+
+    return `${day} ${months[monthIndex]} ${year}`;
+  }
 
   const date = new Date(dateValue);
 
@@ -32,7 +63,6 @@ function formatDate(dateValue: string | Date | null | undefined): string {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    timeZone: 'UTC',
   });
 }
 

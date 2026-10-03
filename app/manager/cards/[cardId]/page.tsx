@@ -26,8 +26,39 @@ import {
   CurrentUserSession
 } from '@/lib/types';
 
-function formatDate(dateValue: string | Date | null | undefined): string {
+function formatDate(
+  dateValue: string | Date | null | undefined
+): string {
   if (!dateValue) return '—';
+
+  if (typeof dateValue === 'string') {
+    const datePart = dateValue.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+
+    if (
+      !year ||
+      !month ||
+      !day ||
+      year.length !== 4 ||
+      month.length !== 2 ||
+      day.length !== 2
+    ) {
+      return '—';
+    }
+
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    const monthIndex = Number(month) - 1;
+
+    if (monthIndex < 0 || monthIndex > 11) {
+      return '—';
+    }
+
+    return `${day} ${months[monthIndex]} ${year}`;
+  }
 
   const date = new Date(dateValue);
 
@@ -37,7 +68,6 @@ function formatDate(dateValue: string | Date | null | undefined): string {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    timeZone: 'UTC',
   });
 }
 
@@ -356,8 +386,8 @@ export default function ManagerCardReviewPage({
               <button
                 onClick={() => setActiveTab('transactions')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'transactions'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Transactions ({transactions.length})
@@ -366,8 +396,8 @@ export default function ManagerCardReviewPage({
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'billing'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Billing Statements ({billingStatements.length})
@@ -376,8 +406,8 @@ export default function ManagerCardReviewPage({
               <button
                 onClick={() => setActiveTab('payments')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'payments'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Payments ({payments.length})
