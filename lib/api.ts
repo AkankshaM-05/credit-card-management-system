@@ -287,6 +287,16 @@ export async function getMyCards(): Promise<CreditCard[]> {
   return await res.json();
 }
 
+export async function fetchPendingApprovalCards(): Promise<CreditCard[]> {
+  const res = await fetch('/api/cards?status=PENDING_APPROVAL');
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch pending approval cards.');
+  }
+
+  return await res.json();
+}
+
 // ==================== TRANSACTION ====================
 
 export async function createTransaction(data: {
@@ -447,4 +457,28 @@ export async function importPayments(file: File) {
   }
 
   return data;
+}
+
+// ==================== RISK ANALYSIS ====================
+export type RiskAnalysis = {
+  customerId: string;
+  customerName: string;
+  cardId: string;
+  creditLimit: number;
+  outstandingAmount: number;
+  creditUtilization: number;
+  paymentRatio: number;
+  overdueRate: number;
+  partialPaymentRate: number;
+  riskStatus: "HIGH" | "MEDIUM" | "LOW";
+};
+
+export async function fetchRiskAnalysis(): Promise<RiskAnalysis[]> {
+  const res = await fetch("/api/risk-analysis");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch risk analysis.");
+  }
+
+  return await res.json();
 }

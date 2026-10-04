@@ -203,3 +203,33 @@ export async function updateCardStatus(
         client.release();
     }
 }
+
+export async function getPendingApprovalCards(): Promise<CreditCard[]> {
+    const result = await pool.query(
+        `
+    SELECT
+      cc.Card_ID,
+      cc.Customer_ID,
+      c.Name AS Customer_Name,
+      cc.Credit_Limit,
+      cc.Issue_Date,
+      cc.Expiry_Date,
+      cc.Status
+    FROM CREDIT_CARD cc
+    JOIN CUSTOMER c
+      ON cc.Customer_ID = c.Customer_ID
+    WHERE cc.Status = 'PENDING_APPROVAL'
+    ORDER BY cc.Card_ID
+    `
+    );
+
+    return result.rows.map((row) => ({
+        id: String(row.card_id),
+        customerId: String(row.customer_id),
+        customerName: row.customer_name,
+        creditLimit: Number(row.credit_limit),
+        issueDate: row.issue_date,
+        expiryDate: row.expiry_date,
+        status: row.status,
+    }));
+}

@@ -9,22 +9,41 @@ import { StatusBadge } from '@/components/StatusBadge';
 import {
   searchCustomers,
   fetchCardsByCustomer,
+  fetchPendingApprovalCards,
+  fetchRiskAnalysis,
   getCurrentUser,
 } from '@/lib/api';
 import { Customer, CreditCard, CurrentUserSession } from '@/lib/types';
+import type { RiskAnalysis } from '@/lib/api';
 
 export default function ManagerDashboardPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const [currentUser, setCurrentUser] =
     useState<CurrentUserSession | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [searching, setSearching] = useState(false);
+
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
-  const [customerCards, setCustomerCards] = useState<CreditCard[]>([]);
+
+  const [customerCards, setCustomerCards] =
+    useState<CreditCard[]>([]);
+
   const [loadingCards, setLoadingCards] = useState(false);
+
+  const [pendingCards, setPendingCards] =
+    useState<CreditCard[]>([]);
+
+  const [loadingApprovals, setLoadingApprovals] =
+    useState(false);
+
+  const [riskAnalysis, setRiskAnalysis] =
+    useState<RiskAnalysis[]>([]);
+
+  const [loadingRisk, setLoadingRisk] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -33,6 +52,42 @@ export default function ManagerDashboardPage() {
     }
 
     loadUser();
+  }, []);
+
+  // Load cards waiting for manager approval
+  useEffect(() => {
+    async function loadPendingApprovals() {
+      setLoadingApprovals(true);
+
+      try {
+        const cards = await fetchPendingApprovalCards();
+        setPendingCards(cards);
+      } catch {
+        setPendingCards([]);
+      } finally {
+        setLoadingApprovals(false);
+      }
+    }
+
+    loadPendingApprovals();
+  }, []);
+
+  // Load risk analysis
+  useEffect(() => {
+    async function loadRiskAnalysis() {
+      setLoadingRisk(true);
+
+      try {
+        const data = await fetchRiskAnalysis();
+        setRiskAnalysis(data);
+      } catch {
+        setRiskAnalysis([]);
+      } finally {
+        setLoadingRisk(false);
+      }
+    }
+
+    loadRiskAnalysis();
   }, []);
 
   // Live customer search with autocomplete
@@ -93,7 +148,10 @@ export default function ManagerDashboardPage() {
         />
 
         <main className="p-4 sm:p-8 space-y-8 max-w-7xl w-full mx-auto">
-          {/* Search Area */}
+
+          {/* =========================
+              CUSTOMER SEARCH
+          ========================= */}
           <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">
@@ -107,7 +165,6 @@ export default function ManagerDashboardPage() {
               </p>
             </div>
 
-            {/* Live Customer Search */}
             <div className="relative">
               <FormInput
                 label="Search Customer"
@@ -182,7 +239,9 @@ export default function ManagerDashboardPage() {
             )}
           </section>
 
-          {/* Customer Details & Cards Section */}
+          {/* =========================
+              CUSTOMER DETAILS & CARDS
+          ========================= */}
           {selectedCustomer && (
             <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-6">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
@@ -249,8 +308,8 @@ export default function ManagerDashboardPage() {
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="text-xs font-mono text-slate-500">
-                              {card.id}
+                            <span className="text-xs font-semibold text-slate-500">
+                              Card ID
                             </span>
 
                             <div className="text-sm font-mono font-bold text-slate-900 tracking-wider">
@@ -265,7 +324,7 @@ export default function ManagerDashboardPage() {
                           <div>
                             Credit Limit:{' '}
                             <strong>
-                              ${card.creditLimit.toLocaleString()}
+                              ₹{card.creditLimit.toLocaleString('en-IN')}
                             </strong>
                           </div>
 
@@ -290,6 +349,242 @@ export default function ManagerDashboardPage() {
               </div>
             </section>
           )}
+
+          {/* =========================
+              CARD APPROVALS
+          ========================= */}
+          <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                Card Approvals
+              </h2>
+
+              <p className="text-xs text-slate-500">
+                Review credit cards that are waiting for manager approval.
+              </p>
+            </div>
+
+            {loadingApprovals ? (
+              <p className="text-sm text-slate-500">
+                Loading pending card approvals...
+              </p>
+            ) : pendingCards.length === 0 ? (
+              <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg text-center text-slate-500 text-xs">
+                No cards are currently pending approval.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Customer ID
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Customer Name
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Card ID
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Credit Limit
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Issue Date
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Status
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-200">
+                    {pendingCards.map((card) => (
+                      <tr
+                        key={card.id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-4 py-3 font-mono text-xs text-slate-600">
+                          {card.customerId}
+                        </td>
+
+                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                          {card.customerName || '—'}
+                        </td>
+
+                        <td className="px-4 py-3 font-mono text-xs text-slate-700">
+                          {card.id}
+                        </td>
+
+                        <td className="px-4 py-3 text-sm text-slate-700">
+                          ₹{card.creditLimit.toLocaleString('en-IN')}
+                        </td>
+
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {card.issueDate}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <StatusBadge status={card.status} />
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/manager/cards/${card.id}?customerId=${card.customerId}`}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
+                          >
+                            Review →
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* =========================
+              RISK ANALYSIS
+          ========================= */}
+          <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                Risk Analysis
+              </h2>
+
+              <p className="text-xs text-slate-500">
+                Risk assessment based on card utilization and payment behavior.
+              </p>
+            </div>
+
+            {loadingRisk ? (
+              <p className="text-sm text-slate-500">
+                Loading risk analysis...
+              </p>
+            ) : riskAnalysis.length === 0 ? (
+              <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg text-center text-slate-500 text-xs">
+                No risk analysis data available.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="min-w-[1000px] w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Customer ID
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Customer Name
+                      </th>
+
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Card ID
+                      </th>
+
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500">
+                        Credit Utilization
+                      </th>
+
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500">
+                        Payment Ratio
+                      </th>
+
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500">
+                        Overdue Rate
+                      </th>
+
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500">
+                        Partial Payment Rate
+                      </th>
+
+                      {/* Sticky Risk Status */}
+                      <th className="sticky right-[80px] z-10 bg-slate-50 px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Risk Status
+                      </th>
+
+                      {/* Sticky Action */}
+                      <th className="sticky right-0 z-10 bg-slate-50 px-4 py-3 text-left text-xs font-semibold text-slate-500">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-200">
+                    {riskAnalysis.map((risk) => (
+                      <tr
+                        key={risk.cardId}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-4 py-3 font-mono text-xs text-slate-600">
+                          {risk.customerId}
+                        </td>
+
+                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                          {risk.customerName}
+                        </td>
+
+                        <td className="px-4 py-3 font-mono text-xs text-slate-700">
+                          {risk.cardId}
+                        </td>
+
+                        <td className="px-4 py-3 text-right text-sm text-slate-700">
+                          {risk.creditUtilization.toFixed(2)}%
+                        </td>
+
+                        <td className="px-4 py-3 text-right text-sm text-slate-700">
+                          {risk.paymentRatio.toFixed(2)}%
+                        </td>
+
+                        <td className="px-4 py-3 text-right text-sm text-slate-700">
+                          {risk.overdueRate.toFixed(2)}%
+                        </td>
+
+                        <td className="px-4 py-3 text-right text-sm text-slate-700">
+                          {risk.partialPaymentRate.toFixed(2)}%
+                        </td>
+
+                        {/* Sticky Risk Status */}
+                        <td className="sticky right-[80px] z-10 bg-white px-4 py-3">
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${risk.riskStatus === 'HIGH'
+                                ? 'bg-red-100 text-red-700'
+                                : risk.riskStatus === 'MEDIUM'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-green-100 text-green-700'
+                              }`}
+                          >
+                            {risk.riskStatus}
+                          </span>
+                        </td>
+
+                        {/* Sticky Action */}
+                        <td className="sticky right-0 z-10 bg-white px-4 py-3">
+                          <Link
+                            href={`/manager/cards/${risk.cardId}?customerId=${risk.customerId}`}
+                            className="inline-flex whitespace-nowrap px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
+                          >
+                            View →
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
         </main>
       </div>
     </div>

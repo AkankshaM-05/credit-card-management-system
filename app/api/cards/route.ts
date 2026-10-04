@@ -4,6 +4,7 @@ import {
     createCard,
     getCardsByCustomer,
     getCardById,
+    getPendingApprovalCards,
     updateCardStatus,
 } from "@/lib/services/card";
 
@@ -23,6 +24,21 @@ export async function GET(request: Request) {
         const customerId = searchParams.get("customerId");
         const cardId = searchParams.get("id");
         const me = searchParams.get("me");
+        const status = searchParams.get("status");
+
+        // Pending approval cards for Manager
+        if (status === "PENDING_APPROVAL") {
+            if (session.userType !== "MANAGER") {
+                return NextResponse.json(
+                    { error: "Forbidden" },
+                    { status: 403 }
+                );
+            }
+
+            const cards = await getPendingApprovalCards();
+
+            return NextResponse.json(cards);
+        }
 
         // Customer's own cards
         if (me === "true") {

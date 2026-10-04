@@ -70,11 +70,10 @@ function CreateCardContent() {
 
       {feedback && (
         <div
-          className={`p-4 rounded-xl text-sm font-semibold border ${
-            feedback.type === 'success'
+          className={`p-4 rounded-xl text-sm font-semibold border ${feedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : 'bg-rose-50 border-rose-200 text-rose-800'
-          }`}
+            }`}
         >
           {feedback.text}
         </div>
@@ -124,12 +123,17 @@ function CreateCardContent() {
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Initial Card Status
               </label>
-              <div className="px-3.5 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-600 font-semibold flex items-center justify-between">
-                <span>PENDING_APPROVAL</span>
+
+              <div className="px-3.5 py-2.5 bg-slate-100 border border-slate-300 rounded-lg flex items-center justify-between">
+                <span className="text-sm text-slate-500">
+                  Automatically assigned
+                </span>
+
                 <StatusBadge status="PENDING_APPROVAL" />
               </div>
+
               <p className="mt-1 text-[11px] text-slate-400">
-                Status is locked to PENDING_APPROVAL upon creation.
+                The card requires manager approval before activation.
               </p>
             </div>
 

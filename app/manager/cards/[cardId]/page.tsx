@@ -176,7 +176,10 @@ export default function ManagerCardReviewPage({
       header: 'Amount',
       cell: (row) => (
         <span className="font-semibold text-slate-900">
-          ${row.amount.toFixed(2)}
+          ₹{row.amount.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
         </span>
       )
     },
@@ -209,7 +212,10 @@ export default function ManagerCardReviewPage({
       header: 'Transaction Amount',
       cell: (row) => (
         <span className="font-semibold text-slate-900">
-          ${row.transactionAmount.toFixed(2)}
+          ₹{row.transactionAmount.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
         </span>
       )
     },
@@ -233,7 +239,10 @@ export default function ManagerCardReviewPage({
       header: 'Amount Paid',
       cell: (row) => (
         <span className="font-semibold text-emerald-700">
-          ${row.amountPaid.toFixed(2)}
+          ₹{row.amountPaid.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
         </span>
       )
     },
@@ -292,8 +301,8 @@ export default function ManagerCardReviewPage({
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   <div>
                     <div className="flex items-center space-x-3">
-                      <span className="text-xs font-mono font-semibold text-slate-500">
-                        {card.id}
+                      <span className="text-xs font-semibold text-slate-500">
+                        Card ID
                       </span>
                       <StatusBadge status={card.status} />
                     </div>
@@ -350,7 +359,7 @@ export default function ManagerCardReviewPage({
                       Credit Limit
                     </div>
                     <div className="text-sm font-bold text-slate-900 mt-0.5">
-                      ${card.creditLimit.toLocaleString()}
+                      ₹{card.creditLimit.toLocaleString('en-IN')}
                     </div>
                   </div>
 
@@ -386,8 +395,8 @@ export default function ManagerCardReviewPage({
               <button
                 onClick={() => setActiveTab('transactions')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'transactions'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Transactions ({transactions.length})
@@ -396,8 +405,8 @@ export default function ManagerCardReviewPage({
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'billing'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Billing Statements ({billingStatements.length})
@@ -406,8 +415,8 @@ export default function ManagerCardReviewPage({
               <button
                 onClick={() => setActiveTab('payments')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'payments'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Payments ({payments.length})

@@ -169,10 +169,11 @@ export async function POST(request: Request) {
             const statementResult =
                 await client.query(
                     `
-                    SELECT
-                        Statement_ID,
-                        Transaction_Amount,
-                        Amount_Paid
+SELECT
+Statement_ID,
+    Transaction_Amount,
+    Amount_Paid,
+    Due_Date
                     FROM BILLING_STATEMENT
                     WHERE Statement_ID = $1
                     FOR UPDATE
@@ -215,14 +216,14 @@ export async function POST(request: Request) {
             await client.query(
                 `
                 INSERT INTO PAYMENT
-                (
-                    Statement_ID,
-                    Amount_Paid,
-                    Payment_Date,
-                    Payment_Status
-                )
-                VALUES ($1, $2, $3, 'SUCCESS')
-                `,
+    (
+        Statement_ID,
+        Amount_Paid,
+        Payment_Date,
+        Payment_Status
+    )
+VALUES($1, $2, $3, 'SUCCESS')
+    `,
                 [
                     payment.statementId,
                     payment.amountPaid,
@@ -240,14 +241,14 @@ export async function POST(request: Request) {
                 | "PAID"
                 | "OVERDUE";
 
-            if (
-                newAmountPaid ===
-                transactionAmount
-            ) {
+            const today = new Date();
+            const dueDate = new Date(statement.due_date);
+
+            if (newAmountPaid === transactionAmount) {
                 newStatus = "PAID";
-            } else if (
-                newAmountPaid > 0
-            ) {
+            } else if (today > dueDate) {
+                newStatus = "OVERDUE";
+            } else if (newAmountPaid > 0) {
                 newStatus = "PARTIAL";
             } else {
                 newStatus = "DUE";
@@ -256,11 +257,11 @@ export async function POST(request: Request) {
             await client.query(
                 `
                 UPDATE BILLING_STATEMENT
-                SET
-                    Amount_Paid = $1,
-                    Status = $2
+SET
+Amount_Paid = $1,
+    Status = $2
                 WHERE Statement_ID = $3
-                `,
+    `,
                 [
                     newAmountPaid,
                     newStatus,
@@ -312,9 +313,10 @@ function normalizeDate(value: unknown): string | null {
             return null;
         }
 
-        return `${date.y}-${String(date.m).padStart(2, "0")}-${String(
+        return `${date.y} -${String(date.m).padStart(2, "0")} -${String(
             date.d
-        ).padStart(2, "0")}`;
+        ).padStart(2, "0")
+            } `;
     }
 
     if (typeof value === "string") {
@@ -350,12 +352,11 @@ function normalizeDate(value: unknown): string | null {
             return null;
         }
 
-        return `${year}-${String(month).padStart(2, "0")}-${String(
+        return `${year} -${String(month).padStart(2, "0")} -${String(
             day
-        ).padStart(2, "0")}`;
+        ).padStart(2, "0")
+            } `;
     }
 
     return null;
 }
-
-// Statement_ID, Amount_Paid, Payment_Date

@@ -130,8 +130,12 @@ function EnterTransactionContent() {
 
       setFeedback({
         type: 'success',
-        text: `Transaction of $${amount.toFixed(
-          2
+        text: `Transaction of ₹${amount.toLocaleString(
+          'en-IN',
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }
         )} (${txnType}) submitted successfully.`,
       });
     } catch (err: unknown) {
@@ -169,8 +173,7 @@ function EnterTransactionContent() {
         type: 'success',
         text:
           result.message ||
-          `Successfully imported ${result.successfulRows
-          } transaction record(s).`,
+          `Successfully imported ${result.successfulRows} transaction record(s).`,
       });
     } catch (err: unknown) {
       const msg =
@@ -284,7 +287,7 @@ function EnterTransactionContent() {
 
             <div>
               <span className="text-slate-400 font-semibold uppercase tracking-wider">
-                Selected Card ID
+                Card ID
               </span>
 
               <div className="font-bold text-slate-900 text-sm font-mono mt-0.5">
@@ -350,7 +353,7 @@ function EnterTransactionContent() {
             {/* Amount */}
 
             <FormInput
-              label="Transaction Amount ($)"
+              label="Transaction Amount (₹)"
               type="number"
               min="0.01"
               step="0.01"

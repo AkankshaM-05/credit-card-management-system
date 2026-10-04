@@ -139,8 +139,12 @@ function RecordPaymentContent() {
 
       setFeedback({
         type: 'success',
-        text: `Payment of ₹${amountPaid.toFixed(
-          2
+        text: `Payment of ₹${amountPaid.toLocaleString(
+          'en-IN',
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }
         )} recorded successfully.`,
       });
 

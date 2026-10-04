@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { Sidebar } from '@/components/Sidebar';
@@ -66,18 +64,33 @@ function formatDate(
   });
 }
 
-export default function CustomerCardDetailPage({ params }: { params: Promise<{ cardId: string }> }) {
+export default function CustomerCardDetailPage({
+  params
+}: {
+  params: Promise<{ cardId: string }>
+}) {
   const resolvedParams = use(params);
   const cardId = resolvedParams.cardId;
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<CurrentUserSession | null>(null);
-  const [activeTab, setActiveTab] = useState<'transactions' | 'billing' | 'payments'>('transactions');
+  const [currentUser, setCurrentUser] =
+    useState<CurrentUserSession | null>(null);
 
-  const [card, setCard] = useState<CreditCard | null>(null);
-  const [transactions, setTransactions] = useState<CardTransaction[]>([]);
-  const [billingStatements, setBillingStatements] = useState<BillingStatement[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [activeTab, setActiveTab] =
+    useState<'transactions' | 'billing' | 'payments'>('transactions');
+
+  const [card, setCard] =
+    useState<CreditCard | null>(null);
+
+  const [transactions, setTransactions] =
+    useState<CardTransaction[]>([]);
+
+  const [billingStatements, setBillingStatements] =
+    useState<BillingStatement[]>([]);
+
+  const [payments, setPayments] =
+    useState<Payment[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -89,16 +102,22 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
         const c = await fetchCardById(cardId);
         setCard(c);
 
-        const transactionList = await fetchTransactionsByCard(cardId);
+        const transactionList =
+          await fetchTransactionsByCard(cardId);
         setTransactions(transactionList);
 
-        const billingList = await fetchBillingStatementsByCard(cardId);
+        const billingList =
+          await fetchBillingStatementsByCard(cardId);
         setBillingStatements(billingList);
 
-        const paymentList = await fetchPaymentsByCard(cardId);
+        const paymentList =
+          await fetchPaymentsByCard(cardId);
         setPayments(paymentList);
       } catch (error) {
-        console.error('Failed to load card details:', error);
+        console.error(
+          'Failed to load card details:',
+          error
+        );
       } finally {
         setLoading(false);
       }
@@ -109,11 +128,26 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
 
   // Table Columns
   const transactionColumns: Column<CardTransaction>[] = [
-    { header: 'Transaction ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
-    { header: 'Merchant', accessorKey: 'merchantName', className: 'font-medium' },
+    {
+      header: 'Transaction ID',
+      accessorKey: 'id',
+      className: 'font-mono text-xs font-semibold'
+    },
+    {
+      header: 'Merchant',
+      accessorKey: 'merchantName',
+      className: 'font-medium'
+    },
     {
       header: 'Amount',
-      cell: (row) => <span className="font-semibold text-slate-900">${row.amount.toFixed(2)}</span>
+      cell: (row) => (
+        <span className="font-semibold text-slate-900">
+          ₹{row.amount.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
+        </span>
+      )
     },
     {
       header: 'Date',
@@ -121,57 +155,91 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
     },
     {
       header: 'Type',
-      cell: (row) => <span className="text-xs font-medium text-slate-700 uppercase">{row.type}</span>
+      cell: (row) => (
+        <span className="text-xs font-medium text-slate-700 uppercase">
+          {row.type}
+        </span>
+      )
     }
   ];
 
   const billingColumns: Column<BillingStatement>[] = [
-    { header: 'Statement ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
+    {
+      header: 'Statement ID',
+      accessorKey: 'id',
+      className: 'font-mono text-xs font-semibold'
+    },
     {
       header: 'Start Date',
-      cell: (row) => formatDate(row.billingStartDate)
+      cell: (row) =>
+        formatDate(row.billingStartDate)
     },
     {
       header: 'End Date',
-      cell: (row) => formatDate(row.billingEndDate)
+      cell: (row) =>
+        formatDate(row.billingEndDate)
     },
     {
       header: 'Total Amount',
       cell: (row) => (
         <span className="font-semibold text-slate-900">
-          ${row.transactionAmount.toFixed(2)}
+          ₹{row.transactionAmount.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
         </span>
       )
     },
     {
       header: 'Due Date',
-      cell: (row) => formatDate(row.dueDate)
+      cell: (row) =>
+        formatDate(row.dueDate)
     },
     {
       header: 'Status',
-      cell: (row) => <StatusBadge status={row.status} />
+      cell: (row) => (
+        <StatusBadge status={row.status} />
+      )
     }
   ];
 
   const paymentColumns: Column<Payment>[] = [
-    { header: 'Payment ID', accessorKey: 'id', className: 'font-mono text-xs font-semibold' },
+    {
+      header: 'Payment ID',
+      accessorKey: 'id',
+      className: 'font-mono text-xs font-semibold'
+    },
     {
       header: 'Amount Paid',
-      cell: (row) => <span className="font-semibold text-emerald-700">${row.amountPaid.toFixed(2)}</span>
+      cell: (row) => (
+        <span className="font-semibold text-emerald-700">
+          ₹{row.amountPaid.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
+        </span>
+      )
     },
     {
       header: 'Payment Date',
-      cell: (row) => formatDate(row.paymentDate)
+      cell: (row) =>
+        formatDate(row.paymentDate)
     },
     {
       header: 'Payment Status',
-      cell: (row) => <StatusBadge status={row.paymentStatus} />
+      cell: (row) => (
+        <StatusBadge status={row.paymentStatus} />
+      )
     }
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar role="CUSTOMER" mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <Sidebar
+        role="CUSTOMER"
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
 
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         <Topbar
@@ -182,6 +250,7 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
         />
 
         <main className="p-4 sm:p-8 space-y-6 max-w-7xl w-full mx-auto">
+
           {/* Back link */}
           <div>
             <Link
@@ -195,40 +264,58 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
           {/* Card Overview Banner */}
           <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
             {loading ? (
-              <p className="text-sm text-slate-500">Loading card details...</p>
+              <p className="text-sm text-slate-500">
+                Loading card details...
+              </p>
             ) : card ? (
               <div className="space-y-4">
+
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <div>
                     <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                       Credit Card ID
                     </div>
+
                     <h2 className="text-xl font-mono font-bold text-slate-900 tracking-wider">
                       {card.id}
                     </h2>
                   </div>
+
                   <StatusBadge status={card.status} />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-xs">
+
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Credit Limit</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Credit Limit
+                    </div>
+
                     <div className="text-lg font-bold text-slate-900 mt-0.5">
-                      ${card.creditLimit.toLocaleString()}
+                      ₹{card.creditLimit.toLocaleString('en-IN')}
                     </div>
                   </div>
+
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Issue Date</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Issue Date
+                    </div>
+
                     <div className="text-sm font-medium text-slate-800 mt-0.5">
                       {formatDate(card.issueDate)}
                     </div>
                   </div>
+
                   <div>
-                    <div className="text-slate-400 uppercase tracking-wider font-semibold">Expiry Date</div>
+                    <div className="text-slate-400 uppercase tracking-wider font-semibold">
+                      Expiry Date
+                    </div>
+
                     <div className="text-sm font-medium text-slate-800 mt-0.5">
                       {formatDate(card.expiryDate)}
                     </div>
                   </div>
+
                 </div>
               </div>
             ) : (
@@ -240,12 +327,14 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
 
           {/* History Tabs Section */}
           <section className="space-y-4">
+
             <div className="border-b border-slate-200 flex space-x-6">
+
               <button
                 onClick={() => setActiveTab('transactions')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'transactions'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Transactions ({transactions.length})
@@ -254,8 +343,8 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'billing'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Billing Statements ({billingStatements.length})
@@ -264,15 +353,17 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
               <button
                 onClick={() => setActiveTab('payments')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'payments'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Payments ({payments.length})
               </button>
+
             </div>
 
             {/* Tab Contents */}
+
             {activeTab === 'transactions' && (
               <DataTable
                 columns={transactionColumns}
@@ -299,6 +390,7 @@ export default function CustomerCardDetailPage({ params }: { params: Promise<{ c
                 loading={loading}
               />
             )}
+
           </section>
         </main>
       </div>
