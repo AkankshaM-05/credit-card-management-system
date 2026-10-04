@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { Sidebar } from '@/components/Sidebar';
@@ -333,8 +334,8 @@ export default function CustomerCardDetailPage({
               <button
                 onClick={() => setActiveTab('transactions')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'transactions'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Transactions ({transactions.length})
@@ -343,8 +344,8 @@ export default function CustomerCardDetailPage({
               <button
                 onClick={() => setActiveTab('billing')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'billing'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Billing Statements ({billingStatements.length})
@@ -353,8 +354,8 @@ export default function CustomerCardDetailPage({
               <button
                 onClick={() => setActiveTab('payments')}
                 className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'payments'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
               >
                 Payments ({payments.length})
