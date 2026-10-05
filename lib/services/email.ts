@@ -56,14 +56,14 @@ export async function sendBillingDueReminders(
             ON cc.Customer_ID = c.Customer_ID
 
         WHERE
-            bs.Status IN ('DUE', 'PARTIAL')
+            bs.Status IN ('DUE', 'PARTIAL', 'OVERDUE')
             AND (
-                bs.Due_Date = COALESCE(
+                bs.Due_Date::date = COALESCE(
                     $1::date,
                     CURRENT_DATE + 1
                 )
                 OR
-                bs.Due_Date = COALESCE(
+                bs.Due_Date::date = COALESCE(
                     $1::date,
                     CURRENT_DATE
                 ) - INTERVAL '1 day'
@@ -162,13 +162,6 @@ export async function sendBillingDueReminders(
                     Please make the remaining payment as soon as possible
                     to clear the outstanding statement balance.
                 </p>
-
-                <p>
-                    <strong>
-                        Additional charges may apply according to
-                        the applicable payment terms.
-                    </strong>
-                </p>
             `
             : `
                 <p>
@@ -242,21 +235,21 @@ export async function sendBillingDueReminders(
 
                     <p>
                         <strong>Statement Amount:</strong>
-                        $${Number(
+                        ₹${Number(
                     statement.transaction_amount
                 ).toFixed(2)}
                     </p>
 
                     <p>
                         <strong>Amount Paid:</strong>
-                        $${Number(
+                        ₹${Number(
                     statement.amount_paid
                 ).toFixed(2)}
                     </p>
 
                     <p>
                         <strong>Remaining Statement Balance:</strong>
-                        $${remainingAmount.toFixed(2)}
+                        ₹${remainingAmount.toFixed(2)}
                     </p>
 
                     <hr />
@@ -265,17 +258,17 @@ export async function sendBillingDueReminders(
 
                     <p>
                         <strong>Credit Limit:</strong>
-                        $${creditLimit.toFixed(2)}
+                        ₹${creditLimit.toFixed(2)}
                     </p>
 
                     <p>
                         <strong>Current Outstanding:</strong>
-                        $${currentOutstanding.toFixed(2)}
+                        ₹${currentOutstanding.toFixed(2)}
                     </p>
 
                     <p>
                         <strong>Available Credit:</strong>
-                        $${availableCredit.toFixed(2)}
+                        ₹${availableCredit.toFixed(2)}
                     </p>
 
                     <hr />

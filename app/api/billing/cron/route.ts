@@ -1,13 +1,10 @@
+
 import { NextResponse } from "next/server";
 import { generateWeeklyBillingStatements } from "@/lib/services/billing";
 import { sendBillingDueReminders } from "@/lib/services/email";
 
 export async function GET(request: Request) {
-    /*
-      Protect the cron endpoint with a secret.
-      Only the configured scheduler should be able
-      to trigger automatic billing and payment reminders.
-    */
+    // Protect the cron endpoint with a secret.
     const authHeader = request.headers.get("authorization");
 
     if (
@@ -44,6 +41,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json(
             {
+                success: false,
                 error:
                     error instanceof Error
                         ? error.message
