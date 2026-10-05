@@ -71,8 +71,8 @@ function CreateCardContent() {
       {feedback && (
         <div
           className={`p-4 rounded-xl text-sm font-semibold border ${feedback.type === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border-rose-200 text-rose-800'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-800'
             }`}
         >
           {feedback.text}
@@ -110,7 +110,7 @@ function CreateCardContent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormInput
-              label="Credit Limit ($)"
+              label="Credit Limit (₹)"
               type="number"
               min="500"
               step="500"

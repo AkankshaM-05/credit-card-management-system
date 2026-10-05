@@ -285,7 +285,7 @@ export default function EmployeeDashboardPage() {
                             <div>
                               Credit Limit:{' '}
                               <strong>
-                                ${card.creditLimit.toLocaleString()}
+                                ₹{card.creditLimit.toLocaleString('en-IN')}
                               </strong>
                             </div>
 

@@ -177,7 +177,7 @@ export default function CustomerDashboardPage() {
                 {cards.map((card) => (
                   <Link
                     key={card.id}
-                    href={`/ customer / cards / ${card.id} `}
+                    href={`/customer/cards/${card.id} `}
                     className="block bg-white hover:bg-slate-50 border border-slate-200 hover:border-blue-400 rounded-xl p-6 shadow-2xs transition-all group"
                   >
                     <div className="flex justify-between items-start mb-4">
