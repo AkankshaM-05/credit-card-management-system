@@ -101,10 +101,15 @@ export async function createPayment(data: {
         /*
           Determine the new billing status.
         */
+        const dueDate = new Date(statement.due_date);
+        const today = new Date();
+
         let newStatus: BillingStatus;
 
         if (newAmountPaid === transactionAmount) {
             newStatus = "PAID";
+        } else if (today > dueDate) {
+            newStatus = "OVERDUE";
         } else if (newAmountPaid > 0) {
             newStatus = "PARTIAL";
         } else {

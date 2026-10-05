@@ -16,91 +16,91 @@ export type RiskAnalysis = {
 export async function getRiskAnalysis(): Promise<RiskAnalysis[]> {
     const result = await pool.query(
         `
-        WITH transaction_totals AS (
-            SELECT
+        WITH transaction_totals AS(
+    SELECT
                 Card_ID,
-                COALESCE(
-                    SUM(
-                        CASE
+    COALESCE(
+        SUM(
+            CASE
                             WHEN Transaction_Type = 'PURCHASE'
                                 THEN Amount
-                            WHEN Transaction_Type IN ('REFUND', 'REVERSAL')
-                                THEN -Amount
+                            WHEN Transaction_Type IN('REFUND', 'REVERSAL')
+                                THEN - Amount
                             ELSE 0
                         END
-                    ),
-                    0
-                ) AS total_transaction_amount
+        ),
+        0
+    ) AS total_transaction_amount
             FROM CARD_TRANSACTION
             GROUP BY Card_ID
-        ),
+),
 
-        payment_totals AS (
-            SELECT
+    payment_totals AS(
+        SELECT
                 bs.Card_ID,
-                COALESCE(
-                    SUM(
-                        CASE
+        COALESCE(
+            SUM(
+                CASE
                             WHEN p.Payment_Status = 'SUCCESS'
                                 THEN p.Amount_Paid
                             ELSE 0
                         END
-                    ),
-                    0
-                ) AS total_amount_paid
+            ),
+            0
+        ) AS total_amount_paid
             FROM PAYMENT p
             JOIN BILLING_STATEMENT bs
                 ON p.Statement_ID = bs.Statement_ID
             GROUP BY bs.Card_ID
-        ),
+    ),
 
-        statement_totals AS (
+        statement_totals AS(
             SELECT
                 Card_ID,
-                COUNT(*) AS total_statements,
+            COUNT(*) AS total_statements,
 
-                COUNT(*) FILTER (
-                    WHERE Status = 'OVERDUE'
-                ) AS overdue_statements,
+            COUNT(*) FILTER(
+                WHERE Status = 'OVERDUE'
+            ) AS overdue_statements,
 
-                COUNT(*) FILTER (
-                    WHERE Status = 'PARTIAL'
-                ) AS partial_statements
+            COUNT(*) FILTER(
+                WHERE Status = 'PARTIAL'
+            ) AS partial_statements
 
             FROM BILLING_STATEMENT
             GROUP BY Card_ID
         )
 
-        SELECT
-            cc.Card_ID,
-            cc.Customer_ID,
-            c.Name AS Customer_Name,
-            cc.Credit_Limit,
+SELECT
+cc.Card_ID,
+    cc.Customer_ID,
+    c.Name AS Customer_Name,
+        cc.Credit_Limit,
 
-            COALESCE(
-                tt.total_transaction_amount,
-                0
-            ) AS total_transaction_amount,
+        COALESCE(
+            tt.total_transaction_amount,
+            0
+        ) AS total_transaction_amount,
 
             COALESCE(
                 pt.total_amount_paid,
                 0
             ) AS total_amount_paid,
 
-            COALESCE(
-                st.total_statements,
-                0
-            ) AS total_statements,
+                COALESCE(
+                    st.total_statements,
+                    0
+                ) AS total_statements,
 
-            COALESCE(
-                st.overdue_statements,
-                0
-            ) AS overdue_statements,
+                    COALESCE(
+                        st.overdue_statements,
+                        0
+                    ) AS overdue_statements,
 
-            COALESCE(
-                st.partial_statements,
-                0
-            ) AS partial_statements
+                        COALESCE(
+                            st.partial_statements,
+                            0
+                        ) AS partial_statements
 
         FROM CREDIT_CARD cc
 
@@ -116,10 +116,10 @@ export async function getRiskAnalysis(): Promise<RiskAnalysis[]> {
         LEFT JOIN statement_totals st
             ON cc.Card_ID = st.Card_ID
 
-        WHERE cc.Status IN ('ACTIVE', 'BLOCKED')
+        WHERE cc.Status IN('ACTIVE', 'BLOCKED')
 
         ORDER BY cc.Card_ID
-        `
+    `
     );
 
     const analysis: RiskAnalysis[] = result.rows.map((row) => {
@@ -132,7 +132,10 @@ export async function getRiskAnalysis(): Promise<RiskAnalysis[]> {
             Number(row.total_amount_paid);
 
         const outstandingAmount =
-            totalTransactionAmount - totalAmountPaid;
+            Math.max(
+                0,
+                totalTransactionAmount - totalAmountPaid
+            );
 
         const creditUtilization =
             creditLimit > 0
@@ -163,29 +166,38 @@ export async function getRiskAnalysis(): Promise<RiskAnalysis[]> {
                 ? (partialStatements / totalStatements) * 100
                 : 0;
 
-        let highRiskConditions = 0;
-
-        if (creditUtilization > 70) {
-            highRiskConditions++;
-        }
-
-        if (overdueRate > 20) {
-            highRiskConditions++;
-        }
-
-        if (partialPaymentRate > 30) {
-            highRiskConditions++;
-        }
-
-        if (paymentRatio < 70) {
-            highRiskConditions++;
-        }
-
         let riskStatus: "HIGH" | "MEDIUM" | "LOW";
 
-        if (highRiskConditions >= 2) {
+        const hasOutstandingBalance =
+            outstandingAmount > 0;
+
+        const noPaymentMade =
+            totalAmountPaid === 0 &&
+            totalTransactionAmount > 0;
+
+        const highUtilization =
+            creditUtilization > 70;
+
+        const highOverdueRate =
+            overdueRate > 20;
+
+        const highPartialPaymentRate =
+            partialPaymentRate > 30;
+
+        if (
+            noPaymentMade && hasOutstandingBalance
+        ) {
             riskStatus = "HIGH";
-        } else if (highRiskConditions === 1) {
+        } else if (
+            highUtilization &&
+            (highOverdueRate || highPartialPaymentRate)
+        ) {
+            riskStatus = "HIGH";
+        } else if (
+            highOverdueRate ||
+            highPartialPaymentRate ||
+            paymentRatio < 70
+        ) {
             riskStatus = "MEDIUM";
         } else {
             riskStatus = "LOW";
