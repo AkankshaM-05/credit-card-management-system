@@ -121,6 +121,7 @@ function formatDate(date: Date): string {
   - Existing statements are not duplicated.
   - New statements start with status DUE.
   - Due date = billing period end + 15 days.
+  - Unpaid/partially paid past-due statements become OVERDUE.
 */
 export async function generateWeeklyBillingStatements(): Promise<{
   generated: number;
@@ -133,6 +134,21 @@ export async function generateWeeklyBillingStatements(): Promise<{
 
   try {
     await client.query("BEGIN");
+
+    /*
+      Mark unpaid or partially paid statements as OVERDUE
+      once their due date has passed.
+
+      PAID statements are not affected.
+    */
+    await client.query(
+      `
+        UPDATE BILLING_STATEMENT
+        SET Status = 'OVERDUE'
+        WHERE Status IN ('DUE', 'PARTIAL')
+          AND Due_Date < CURRENT_DATE
+      `
+    );
 
     const today = new Date();
 
