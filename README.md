@@ -348,12 +348,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. You will be
 ### Current Limitations
 - **Internal Ledger Simulation:** Transactions and payments are recorded manually or imported via spreadsheets rather than connected to live card networks (Visa/Mastercard) or payment gateways.
 - **Rule-Based Risk Model:** Risk status is derived from fixed mathematical thresholds rather than predictive machine learning models.
-- **Unidirectional Card Lifecycle:** Blocked cards cannot be returned to active status within the application; the only allowed subsequent action is account closure (`CLOSED`).
-- **Customer Self-Repayment:** Customers can view statements and payment histories, but cannot submit repayments directly from their dashboard.
 - **Merchant Management:** Merchants cannot be added through the UI; initial records must be seeded directly in the database.
 
 ### Future Scope
 - **Payment Gateway Integration:** Connecting Stripe, Razorpay, or sandbox APIs to support live card authorizations and customer repayments.
 - **Machine Learning Delinquency Prediction:** Training predictive models on historical payment patterns to forecast default probability.
-- **Bidirectional Lifecycle Actions:** Implementing manager workflows to unblock cards after customer review or settlement.
 - **Data Exporting:** Adding features to download statements, transactions, and audit logs as PDF or Excel files.
